@@ -26,7 +26,110 @@
 //   }
 package retry
 
-import "time"
+import (
+	"bytes"
+	"fmt"
+	"runtime"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+)
+
+type R struct {
+	fail   bool
+	output []string
+}
+
+func (r *R) FailNow() {
+	r.fail = true
+	runtime.Goexit()
+}
+
+func (r *R) Fatal(args ...interface{}) {
+	r.log(fmt.Sprint(args...))
+	r.FailNow()
+}
+
+func (r *R) Fatalf(format string, args ...interface{}) {
+	r.log(fmt.Sprintf(format, args))
+	r.FailNow()
+}
+
+func (r *R) Error(args ...interface{}) {
+	r.log(fmt.Sprint(args...))
+	r.fail = true
+}
+
+func (r *R) log(s string) {
+	r.output = append(r.output, decorate(s))
+}
+
+func decorate(s string) string {
+	_, file, line, ok := runtime.Caller(3)
+	if ok {
+		n := strings.LastIndex(file, "/")
+		if n >= 0 {
+			file = file[n+1:]
+		}
+	} else {
+		file = "???"
+		line = 1
+	}
+	return fmt.Sprintf("%s:%d: %s", file, line, s)
+}
+
+func Run(desc string, t *testing.T, f func(r *R)) {
+	run(OneSec(), desc, t, f)
+}
+
+func RunWith(r Retryer, desc string, t *testing.T, f func(r *R)) {
+	run(r, desc, t, f)
+}
+
+func dedup(a []string) string {
+	if len(a) == 0 {
+		return ""
+	}
+	m := map[string]int{}
+	for _, s := range a {
+		m[s] = m[s] + 1
+	}
+	var b bytes.Buffer
+	for _, s := range a {
+		if _, ok := m[s]; ok {
+			b.WriteString(s)
+			b.WriteRune('\n')
+			delete(m, s)
+		}
+	}
+	return string(b.Bytes())
+}
+
+func run(r Retryer, desc string, t *testing.T, f func(r *R)) {
+	rr := &R{}
+	fail := func() {
+		out := desc + "\n" + dedup(rr.output)
+		if out != "" {
+			t.Log(out)
+		}
+		t.FailNow()
+	}
+	for r.NextOr(fail) {
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			f(rr)
+		}()
+		wg.Wait()
+		if rr.fail {
+			rr.fail = false
+			continue
+		}
+		break
+	}
+}
 
 // OneSec repeats an operation for one second and waits 25ms in between.
 func OneSec() *Timer {
