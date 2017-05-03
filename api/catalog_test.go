@@ -15,19 +15,15 @@ func TestCatalog_Datacenters(t *testing.T) {
 	defer s.Stop()
 
 	catalog := c.Catalog()
-
-	for r := retry.OneSec(); r.NextOr(t.FailNow); {
+	retry.Run("no datacenters", t, func(r *retry.R) {
 		datacenters, err := catalog.Datacenters()
 		if err != nil {
-			t.Log("catalog.Datacenters: ", err)
-			continue
+			r.Fatalf("catalog.Datacenters: ", err)
 		}
-		if len(datacenters) == 0 {
-			t.Log("got 0 datacenters want at least one")
-			continue
+		if len(datacenters) < 1 {
+			r.Fatal("got 0 datacenters want at least one")
 		}
-		break
-	}
+	})
 }
 
 func TestCatalog_Nodes(t *testing.T) {
@@ -35,22 +31,19 @@ func TestCatalog_Nodes(t *testing.T) {
 	defer s.Stop()
 
 	catalog := c.Catalog()
-
-	for r := retry.OneSec(); r.NextOr(func() { t.Fatal("no nodes") }); {
+	retry.RunWith(retry.ThreeTimes(), "no nodes", t, func(r *retry.R) {
 		nodes, meta, err := catalog.Nodes(nil)
 		if err != nil {
-			t.Log("catalog.Nodes: ", err)
-			continue
+			r.Fatalf("catalog.Nodes: ", err)
 		}
 		if meta.LastIndex == 0 {
-			t.Log("got last index 0 want > 0")
-			continue
+			r.Fatal("got last index 0 want > 0")
 		}
 		want := []*Node{
 			{
 				ID:         s.Config.NodeID,
 				Node:       s.Config.NodeName,
-				Address:    "127.0.0.1",
+				Address:    "127.0.0.2",
 				Datacenter: "dc1",
 				TaggedAddresses: map[string]string{
 					"lan": "127.0.0.1",
@@ -61,11 +54,10 @@ func TestCatalog_Nodes(t *testing.T) {
 				ModifyIndex: meta.LastIndex,
 			},
 		}
-		if !verify.Values(t, "", nodes, want) {
-			continue
+		if !verify.Values(r, "", nodes, want) {
+			r.FailNow()
 		}
-		break
-	}
+	})
 }
 
 func TestCatalog_Nodes_MetaFilter(t *testing.T) {
