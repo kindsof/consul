@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/consul/consul/structs"
 	"github.com/hashicorp/consul/testrpc"
+	"github.com/hashicorp/consul/testutil/retry"
 )
 
 func TestValidateUserEventParams(t *testing.T) {
@@ -174,12 +175,11 @@ func TestFireReceiveEvent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
-
-	if err := testrpc.WaitForResult(func() (bool, error) {
-		return len(agent.UserEvents()) == 1, nil
-	}); err != nil {
-		t.Fatal(err)
-	}
+	retry.Run("", t, func(r *retry.R) {
+		if len(agent.UserEvents()) != 1 {
+			r.Fatal(nil)
+		}
+	})
 
 	last := agent.LastUserEvent()
 	if last.ID != p2.ID {

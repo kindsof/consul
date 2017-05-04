@@ -1032,44 +1032,43 @@ func TestAgentAntiEntropy_Checks_ACLDeny(t *testing.T) {
 	agent.state.RemoveCheck("api-check")
 	agent.StartSync()
 	time.Sleep(200 * time.Millisecond)
+	retry.
 
-	// Verify that we are in sync
-	if err := testrpc.WaitForResult(func() (bool, error) {
-		req := structs.NodeSpecificRequest{
-			Datacenter: "dc1",
-			Node:       agent.config.NodeName,
-			QueryOptions: structs.QueryOptions{
-				Token: "root",
-			},
-		}
-		var checks structs.IndexedHealthChecks
-		if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
-			return false, fmt.Errorf("err: %v", err)
-		}
+		// Verify that we are in sync
+		Run("", t, func(r *retry.R) {
 
-		// We should have 1 check (just serf)
-		if len(checks.HealthChecks) != 1 {
-			return false, fmt.Errorf("bad: %v", checks)
-		}
-
-		// All the checks should match
-		for _, chk := range checks.HealthChecks {
-			chk.CreateIndex, chk.ModifyIndex = 0, 0
-			switch chk.CheckID {
-			case "mysql-check":
-				t.Fatalf("should not be permitted")
-			case "api-check":
-				t.Fatalf("should be deleted")
-			case "serfHealth":
-				// ignore
-			default:
-				return false, fmt.Errorf("unexpected check: %v", chk)
+			req := structs.NodeSpecificRequest{
+				Datacenter: "dc1",
+				Node:       agent.config.NodeName,
+				QueryOptions: structs.QueryOptions{
+					Token: "root",
+				},
 			}
-		}
-		return true, nil
-	}); err != nil {
-		t.Fatal(err)
-	}
+			var checks structs.IndexedHealthChecks
+			if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
+				r.Fatalf("err: %v", err)
+			}
+
+			// We should have 1 check (just serf)
+			if len(checks.HealthChecks) != 1 {
+				r.Fatalf("bad: %v", checks)
+			}
+
+			// All the checks should match
+			for _, chk := range checks.HealthChecks {
+				chk.CreateIndex, chk.ModifyIndex = 0, 0
+				switch chk.CheckID {
+				case "mysql-check":
+					t.Fatalf("should not be permitted")
+				case "api-check":
+					t.Fatalf("should be deleted")
+				case "serfHealth":
+					// ignore
+				default:
+					return false, fmt.Errorf("unexpected check: %v", chk)
+				}
+			}
+		})
 
 	// Check the local state.
 	if len(agent.state.checks) != 1 {
@@ -1118,21 +1117,17 @@ func TestAgentAntiEntropy_Check_DeferSync(t *testing.T) {
 		Node:       agent.config.NodeName,
 	}
 	var checks structs.IndexedHealthChecks
+	retry.Run("", t, func(r *retry.R) {
 
-	if err := testrpc.WaitForResult(func() (bool, error) {
 		if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
-			return false, fmt.Errorf("err: %v", err)
+			r.Fatalf("err: %v", err)
 		}
 
 		// Verify checks in place
 		if len(checks.HealthChecks) != 2 {
-			return false, fmt.Errorf("checks: %v", check)
+			r.Fatalf("checks: %v", check)
 		}
-
-		return true, nil
-	}); err != nil {
-		t.Fatal(err)
-	}
+	})
 
 	// Update the check output! Should be deferred
 	agent.state.UpdateCheck("web", api.HealthPassing, "output")
@@ -1152,27 +1147,25 @@ func TestAgentAntiEntropy_Check_DeferSync(t *testing.T) {
 			}
 		}
 	}
+	retry.
 
-	// Wait for a deferred update
-	if err := testrpc.WaitForResult(func() (bool, error) {
-		if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
-			return false, err
-		}
+		// Wait for a deferred update
+		Run("", t, func(r *retry.R) {
 
-		// Verify updated
-		for _, chk := range checks.HealthChecks {
-			switch chk.CheckID {
-			case "web":
-				if chk.Output != "output" {
-					return false, fmt.Errorf("no update: %v", chk)
+			if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
+				r.Fatal(err)
+			}
+
+			// Verify updated
+			for _, chk := range checks.HealthChecks {
+				switch chk.CheckID {
+				case "web":
+					if chk.Output != "output" {
+						return false, fmt.Errorf("no update: %v", chk)
+					}
 				}
 			}
-		}
-
-		return true, nil
-	}); err != nil {
-		t.Fatal(err)
-	}
+		})
 
 	// Change the output in the catalog to force it out of sync.
 	eCopy := check.Clone()
@@ -1258,27 +1251,26 @@ func TestAgentAntiEntropy_Check_DeferSync(t *testing.T) {
 			}
 		}
 	}
+	retry.
 
-	// Wait for the deferred update.
-	if err := testrpc.WaitForResult(func() (bool, error) {
-		if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
-			return false, err
-		}
+		// Wait for the deferred update.
+		Run("", t, func(r *retry.R) {
 
-		// Verify updated
-		for _, chk := range checks.HealthChecks {
-			switch chk.CheckID {
-			case "web":
-				if chk.Output != "deferred" {
-					return false, fmt.Errorf("no update: %v", chk)
+			if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
+				r.Fatal(err)
+			}
+
+			// Verify updated
+			for _, chk := range checks.HealthChecks {
+				switch chk.CheckID {
+				case "web":
+					if chk.Output != "deferred" {
+						return false, fmt.Errorf("no update: %v", chk)
+					}
 				}
 			}
-		}
+		})
 
-		return true, nil
-	}); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestAgentAntiEntropy_NodeInfo(t *testing.T) {
@@ -1310,27 +1302,26 @@ func TestAgentAntiEntropy_NodeInfo(t *testing.T) {
 		Node:       agent.config.NodeName,
 	}
 	var services structs.IndexedNodeServices
+	retry.
 
-	// Wait for the sync
-	if err := testrpc.WaitForResult(func() (bool, error) {
-		if err := agent.RPC("Catalog.NodeServices", &req, &services); err != nil {
-			return false, fmt.Errorf("err: %v", err)
-		}
+		// Wait for the sync
+		Run("", t, func(r *retry.R) {
 
-		// Make sure we synced our node info - this should have ridden on the
-		// "consul" service sync
-		id := services.NodeServices.Node.ID
-		addrs := services.NodeServices.Node.TaggedAddresses
-		meta := services.NodeServices.Node.Meta
-		if id != conf.NodeID ||
-			!reflect.DeepEqual(addrs, conf.TaggedAddresses) ||
-			!reflect.DeepEqual(meta, conf.Meta) {
-			return false, fmt.Errorf("bad: %v", services.NodeServices.Node)
-		}
-		return true, nil
-	}); err != nil {
-		t.Fatal(err)
-	}
+			if err := agent.RPC("Catalog.NodeServices", &req, &services); err != nil {
+				r.Fatalf("err: %v", err)
+			}
+
+			// Make sure we synced our node info - this should have ridden on the
+			// "consul" service sync
+			id := services.NodeServices.Node.ID
+			addrs := services.NodeServices.Node.TaggedAddresses
+			meta := services.NodeServices.Node.Meta
+			if id != conf.NodeID ||
+				!reflect.DeepEqual(addrs, conf.TaggedAddresses) ||
+				!reflect.DeepEqual(meta, conf.Meta) {
+				r.Fatalf("bad: %v", services.NodeServices.Node)
+			}
+		})
 
 	// Blow away the catalog version of the node info
 	if err := agent.RPC("Catalog.Register", args, &out); err != nil {
@@ -1339,26 +1330,26 @@ func TestAgentAntiEntropy_NodeInfo(t *testing.T) {
 
 	// Trigger anti-entropy run and wait
 	agent.StartSync()
+	retry.
 
-	// Wait for the sync - this should have been a sync of just the
-	// node info
-	if err := testrpc.WaitForResult(func() (bool, error) {
-		if err := agent.RPC("Catalog.NodeServices", &req, &services); err != nil {
-			return false, fmt.Errorf("err: %v", err)
-		}
+		// Wait for the sync - this should have been a sync of just the
+		// node info
+		Run("", t, func(r *retry.R) {
 
-		id := services.NodeServices.Node.ID
-		addrs := services.NodeServices.Node.TaggedAddresses
-		meta := services.NodeServices.Node.Meta
-		if id != conf.NodeID ||
-			!reflect.DeepEqual(addrs, conf.TaggedAddresses) ||
-			!reflect.DeepEqual(meta, conf.Meta) {
-			return false, fmt.Errorf("bad: %v", services.NodeServices.Node)
-		}
-		return true, nil
-	}); err != nil {
-		t.Fatal(err)
-	}
+			if err := agent.RPC("Catalog.NodeServices", &req, &services); err != nil {
+				r.Fatalf("err: %v", err)
+			}
+
+			id := services.NodeServices.Node.ID
+			addrs := services.NodeServices.Node.TaggedAddresses
+			meta := services.NodeServices.Node.Meta
+			if id != conf.NodeID ||
+				!reflect.DeepEqual(addrs, conf.TaggedAddresses) ||
+				!reflect.DeepEqual(meta, conf.Meta) {
+				r.Fatalf("bad: %v", services.NodeServices.Node)
+			}
+		})
+
 }
 
 func TestAgentAntiEntropy_deleteService_fails(t *testing.T) {
@@ -1537,19 +1528,18 @@ func TestAgent_sendCoordinate(t *testing.T) {
 		Datacenter: agent.config.Datacenter,
 	}
 	var reply structs.IndexedCoordinates
-	if err := testrpc.WaitForResult(func() (bool, error) {
+	retry.Run("", t, func(r *retry.R) {
+
 		if err := agent.RPC("Coordinate.ListNodes", &req, &reply); err != nil {
-			return false, fmt.Errorf("err: %s", err)
+			r.Fatalf("err: %s", err)
 		}
 		if len(reply.Coordinates) != 1 {
-			return false, fmt.Errorf("expected a coordinate: %v", reply)
+			r.Fatalf("expected a coordinate: %v", reply)
 		}
 		coord := reply.Coordinates[0]
 		if coord.Node != agent.config.NodeName || coord.Coord == nil {
-			return false, fmt.Errorf("bad: %v", coord)
+			r.Fatalf("bad: %v", coord)
 		}
-		return true, nil
-	}); err != nil {
-		t.Fatal(err)
-	}
+	})
+
 }

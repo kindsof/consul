@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/consul/testrpc"
+	"github.com/hashicorp/consul/testutil/retry"
 	"github.com/hashicorp/raft"
 	"github.com/hashicorp/serf/serf"
 )
@@ -49,12 +50,14 @@ func testCleanupDeadServer(t *testing.T, raftVersion int) {
 	}
 
 	for _, s := range servers {
-		if err := testrpc.WaitForResult(func() (bool, error) {
+		retry.Run("", t, func(r *retry.R) {
+
 			peers, _ := s.numPeers()
-			return peers == 3, nil
-		}); err != nil {
-			t.Fatal(err)
-		}
+			if peers != 3 {
+				r.Fatal(nil)
+			}
+		})
+
 	}
 
 	// Bring up a new server
@@ -64,18 +67,18 @@ func testCleanupDeadServer(t *testing.T, raftVersion int) {
 
 	// Kill a non-leader server
 	s3.Shutdown()
+	retry.Run("", t, func(r *retry.R) {
 
-	if err := testrpc.WaitForResult(func() (bool, error) {
 		alive := 0
 		for _, m := range s1.LANMembers() {
 			if m.Status == serf.StatusAlive {
 				alive++
 			}
 		}
-		return alive == 2, nil
-	}); err != nil {
-		t.Fatal(err)
-	}
+		if alive != 2 {
+			r.Fatal(nil)
+		}
+	})
 
 	// Join the new server
 	if _, err := s4.JoinLAN([]string{addr}); err != nil {
@@ -85,12 +88,14 @@ func testCleanupDeadServer(t *testing.T, raftVersion int) {
 
 	// Make sure the dead server is removed and we're back to 3 total peers
 	for _, s := range servers {
-		if err := testrpc.WaitForResult(func() (bool, error) {
+		retry.Run("", t, func(r *retry.R) {
+
 			peers, _ := s.numPeers()
-			return peers == 3, nil
-		}); err != nil {
-			t.Fatal(err)
-		}
+			if peers != 3 {
+				r.Fatal(nil)
+			}
+		})
+
 	}
 }
 
@@ -131,12 +136,14 @@ func TestAutopilot_CleanupDeadServerPeriodic(t *testing.T) {
 	}
 
 	for _, s := range servers {
-		if err := testrpc.WaitForResult(func() (bool, error) {
+		retry.Run("", t, func(r *retry.R) {
+
 			peers, _ := s.numPeers()
-			return peers == 4, nil
-		}); err != nil {
-			t.Fatal(err)
-		}
+			if peers != 4 {
+				r.Fatal(nil)
+			}
+		})
+
 	}
 
 	// Kill a non-leader server
@@ -144,12 +151,14 @@ func TestAutopilot_CleanupDeadServerPeriodic(t *testing.T) {
 
 	// Should be removed from the peers automatically
 	for _, s := range []*Server{s1, s2, s3} {
-		if err := testrpc.WaitForResult(func() (bool, error) {
+		retry.Run("", t, func(r *retry.R) {
+
 			peers, _ := s.numPeers()
-			return peers == 3, nil
-		}); err != nil {
-			t.Fatal(err)
-		}
+			if peers != 3 {
+				r.Fatal(nil)
+			}
+		})
+
 	}
 }
 
@@ -183,12 +192,14 @@ func TestAutopilot_CleanupStaleRaftServer(t *testing.T) {
 	}
 
 	for _, s := range servers {
-		if err := testrpc.WaitForResult(func() (bool, error) {
+		retry.Run("", t, func(r *retry.R) {
+
 			peers, _ := s.numPeers()
-			return peers == 3, nil
-		}); err != nil {
-			t.Fatal(err)
-		}
+			if peers != 3 {
+				r.Fatal(nil)
+			}
+		})
+
 	}
 
 	testrpc.WaitForLeader(t, s1.RPC, "dc1")
@@ -209,12 +220,14 @@ func TestAutopilot_CleanupStaleRaftServer(t *testing.T) {
 
 	// Wait for s4 to be removed
 	for _, s := range []*Server{s1, s2, s3} {
-		if err := testrpc.WaitForResult(func() (bool, error) {
+		retry.Run("", t, func(r *retry.R) {
+
 			peers, _ := s.numPeers()
-			return peers == 3, nil
-		}); err != nil {
-			t.Fatal(err)
-		}
+			if peers != 3 {
+				r.Fatal(nil)
+			}
+		})
+
 	}
 }
 
@@ -246,39 +259,37 @@ func TestAutopilot_PromoteNonVoter(t *testing.T) {
 	}
 
 	testrpc.WaitForLeader(t, s1.RPC, "dc1")
+	retry.
 
-	// Wait for the new server to be added as a non-voter, but make sure
-	// it doesn't get promoted to a voter even after ServerStabilizationTime,
-	// because that would result in an even-numbered quorum count.
-	if err := testrpc.WaitForResult(func() (bool, error) {
-		future := s1.raft.GetConfiguration()
-		if err := future.Error(); err != nil {
-			return false, err
-		}
+		// Wait for the new server to be added as a non-voter, but make sure
+		// it doesn't get promoted to a voter even after ServerStabilizationTime,
+		// because that would result in an even-numbered quorum count.
+		Run("", t, func(r *retry.R) {
 
-		servers := future.Configuration().Servers
+			future := s1.raft.GetConfiguration()
+			if err := future.Error(); err != nil {
+				r.Fatal(err)
+			}
 
-		if len(servers) != 2 {
-			return false, fmt.Errorf("bad: %v", servers)
-		}
-		if servers[1].Suffrage != raft.Nonvoter {
-			return false, fmt.Errorf("bad: %v", servers)
-		}
-		health := s1.getServerHealth(string(servers[1].ID))
-		if health == nil {
-			return false, fmt.Errorf("nil health")
-		}
-		if !health.Healthy {
-			return false, fmt.Errorf("bad: %v", health)
-		}
-		if time.Now().Sub(health.StableSince) < s1.config.AutopilotConfig.ServerStabilizationTime {
-			return false, fmt.Errorf("stable period not elapsed")
-		}
+			servers := future.Configuration().Servers
 
-		return true, nil
-	}); err != nil {
-		t.Fatal(err)
-	}
+			if len(servers) != 2 {
+				r.Fatalf("bad: %v", servers)
+			}
+			if servers[1].Suffrage != raft.Nonvoter {
+				r.Fatalf("bad: %v", servers)
+			}
+			health := s1.getServerHealth(string(servers[1].ID))
+			if health == nil {
+				r.Fatal("nil health")
+			}
+			if !health.Healthy {
+				r.Fatalf("bad: %v", health)
+			}
+			if time.Now().Sub(health.StableSince) < s1.config.AutopilotConfig.ServerStabilizationTime {
+				r.Fatal("stable period not elapsed")
+			}
+		})
 
 	// Now add another server and make sure they both get promoted to voters after stabilization
 	dir3, s3 := testServerWithConfig(t, func(c *Config) {
@@ -291,27 +302,24 @@ func TestAutopilot_PromoteNonVoter(t *testing.T) {
 	if _, err := s3.JoinLAN([]string{addr}); err != nil {
 		t.Fatalf("err: %v", err)
 	}
+	retry.Run("", t, func(r *retry.R) {
 
-	if err := testrpc.WaitForResult(func() (bool, error) {
 		future := s1.raft.GetConfiguration()
 		if err := future.Error(); err != nil {
-			return false, err
+			r.Fatal(err)
 		}
 
 		servers := future.Configuration().Servers
 
 		if len(servers) != 3 {
-			return false, fmt.Errorf("bad: %v", servers)
+			r.Fatalf("bad: %v", servers)
 		}
 		if servers[1].Suffrage != raft.Voter {
-			return false, fmt.Errorf("bad: %v", servers)
+			r.Fatalf("bad: %v", servers)
 		}
 		if servers[2].Suffrage != raft.Voter {
-			return false, fmt.Errorf("bad: %v", servers)
+			r.Fatalf("bad: %v", servers)
 		}
+	})
 
-		return true, nil
-	}); err != nil {
-		t.Fatal(err)
-	}
 }
