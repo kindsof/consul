@@ -79,17 +79,13 @@ func expectStatus(t *testing.T, script, status string) {
 	check.Start()
 	defer check.Stop()
 	retry.Run("", t, func(r *retry.R) {
-
-		// Should have at least 2 updates
-		if mock.Updates("foo") < 2 {
-			r.Fatalf("should have 2 updates %v", mock.updates)
+		if got, want := mock.Updates("foo"), 2; got < want {
+			r.Fatalf("got %d updates want at least %d", got, want)
 		}
-
-		if mock.State("foo") != status {
-			r.Fatalf("should be %v %v", status, mock.state)
+		if got, want := mock.State("foo"), status; got != want {
+			r.Fatalf("got state %q want %q", got, want)
 		}
 	})
-
 }
 
 func TestCheckMonitor_Passing(t *testing.T) {
@@ -279,22 +275,17 @@ func expectHTTPStatus(t *testing.T, url string, status string) {
 	check.Start()
 	defer check.Stop()
 	retry.Run("", t, func(r *retry.R) {
-
-		// Should have at least 2 updates
-		if mock.Updates("foo") < 2 {
-			r.Fatalf("should have 2 updates %v", mock.updates)
+		if got, want := mock.Updates("foo"), 2; got < want {
+			r.Fatalf("got %d updates want at least %d", got, want)
 		}
-
-		if mock.State("foo") != status {
-			r.Fatalf("should be %v %v", status, mock.state)
+		if got, want := mock.State("foo"), status; got != want {
+			r.Fatalf("got state %q want %q", got, want)
 		}
-
 		// Allow slightly more data than CheckBufSize, for the header
 		if n := len(mock.Output("foo")); n > (CheckBufSize + 256) {
 			r.Fatalf("output too long: %d (%d-byte limit)", n, CheckBufSize)
 		}
 	})
-
 }
 
 func TestCheckHTTPCritical(t *testing.T) {
@@ -383,17 +374,13 @@ func TestCheckHTTPTimeout(t *testing.T) {
 	check.Start()
 	defer check.Stop()
 	retry.Run("", t, func(r *retry.R) {
-
-		// Should have at least 2 updates
-		if mock.updates["bar"] < 2 {
-			r.Fatalf("should have at least 2 updates %v", mock.updates)
+		if got, want := mock.Updates("bar"), 2; got < want {
+			r.Fatalf("got %d updates want at least %d", got, want)
 		}
-
-		if mock.state["bar"] != api.HealthCritical {
-			r.Fatalf("should be critical %v", mock.state)
+		if got, want := mock.State("bar"), api.HealthCritical; got != want {
+			r.Fatalf("got state %q want %q", got, want)
 		}
 	})
-
 }
 
 func TestCheckHTTP_disablesKeepAlives(t *testing.T) {
@@ -454,12 +441,10 @@ func TestCheckHTTP_TLSSkipVerify_true_pass(t *testing.T) {
 		t.Fatalf("should be true")
 	}
 	retry.Run("", t, func(r *retry.R) {
-
-		if mock.state["skipverify_true"] != api.HealthPassing {
-			r.Fatalf("should be passing %v", mock.state)
+		if got, want := mock.state["skipverify_true"], api.HealthPassing; got != want {
+			r.Fatalf("got state %q want %q", got, want)
 		}
 	})
-
 }
 
 func TestCheckHTTP_TLSSkipVerify_true_fail(t *testing.T) {
@@ -487,12 +472,10 @@ func TestCheckHTTP_TLSSkipVerify_true_fail(t *testing.T) {
 		t.Fatalf("should be true")
 	}
 	retry.Run("", t, func(r *retry.R) {
-
-		if mock.state["skipverify_true"] != api.HealthCritical {
-			r.Fatalf("should be critical %v", mock.state)
+		if got, want := mock.state["skipverify_true"], api.HealthCritical; got != want {
+			r.Fatalf("got state %q want %q", got, want)
 		}
 	})
-
 }
 
 func TestCheckHTTP_TLSSkipVerify_false(t *testing.T) {
@@ -521,17 +504,14 @@ func TestCheckHTTP_TLSSkipVerify_false(t *testing.T) {
 		t.Fatalf("should be false")
 	}
 	retry.Run("", t, func(r *retry.R) {
-
 		// This should fail due to an invalid SSL cert
-		if mock.state["skipverify_false"] != api.HealthCritical {
-			r.Fatalf("should be critical %v", mock.state)
+		if got, want := mock.state["skipverify_false"], api.HealthCritical; got != want {
+			r.Fatalf("got state %q want %q", got, want)
 		}
-
 		if !strings.Contains(mock.output["skipverify_false"], "certificate signed by unknown authority") {
 			r.Fatalf("should fail with certificate error %v", mock.output)
 		}
 	})
-
 }
 
 func mockTCPServer(network string) net.Listener {
@@ -569,17 +549,13 @@ func expectTCPStatus(t *testing.T, tcp string, status string) {
 	check.Start()
 	defer check.Stop()
 	retry.Run("", t, func(r *retry.R) {
-
-		// Should have at least 2 updates
-		if mock.Updates("foo") < 2 {
-			r.Fatalf("should have 2 updates %v", mock.updates)
+		if got, want := mock.Updates("foo"), 2; got < want {
+			r.Fatalf("got %d updates want at least %d", got, want)
 		}
-
-		if mock.State("foo") != status {
-			r.Fatalf("should be %v %v", status, mock.state)
+		if got, want := mock.State("foo"), status; got != want {
+			r.Fatalf("got state %q want %q", got, want)
 		}
 	})
-
 }
 
 func TestCheckTCPCritical(t *testing.T) {

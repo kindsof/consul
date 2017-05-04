@@ -1301,8 +1301,8 @@ func TestDNS_ServiceLookup_WanAddress(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	retry.Run("", t, func(r *retry.R) {
-		if len(srv1.agent.WANMembers()) <= 1 {
-			r.Fatal(nil)
+		if got, want := len(srv1.agent.WANMembers()), 2; got < want {
+			r.Fatalf("got %d WAN members want at least %d", got, want)
 		}
 	})
 
@@ -3376,8 +3376,8 @@ func TestDNS_PreparedQuery_Failover(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	retry.Run("", t, func(r *retry.R) {
-		if len(srv1.agent.WANMembers()) <= 1 {
-			r.Fatal(nil)
+		if got, want := len(srv1.agent.WANMembers()), 2; got < want {
+			r.Fatalf("got %d WAN members want at least %d", got, want)
 		}
 	})
 

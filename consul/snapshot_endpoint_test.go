@@ -332,8 +332,8 @@ func TestSnapshot_Forward_Datacenter(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	retry.Run("", t, func(r *retry.R) {
-		if len(s1.WANMembers()) <= 1 {
-			r.Fatal(nil)
+		if got, want := len(s1.WANMembers()), 2; got < want {
+			r.Fatalf("got %d WAN members want at least %d", got, want)
 		}
 	})
 

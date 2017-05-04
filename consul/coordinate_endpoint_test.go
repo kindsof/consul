@@ -350,29 +350,25 @@ func TestCoordinate_ListNodes(t *testing.T) {
 	if err := msgpackrpc.CallWithCodec(codec, "Coordinate.Update", &arg3, &out); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	retry.
-
-		// Now query back for all the nodes.
-		Run("", t, func(r *retry.R) {
-
-			arg := structs.DCSpecificRequest{
-				Datacenter: "dc1",
-			}
-			resp := structs.IndexedCoordinates{}
-			if err := msgpackrpc.CallWithCodec(codec, "Coordinate.ListNodes", &arg, &resp); err != nil {
-				r.Fatalf("err: %v", err)
-			}
-			if len(resp.Coordinates) != 3 ||
-				resp.Coordinates[0].Node != "bar" ||
-				resp.Coordinates[1].Node != "baz" ||
-				resp.Coordinates[2].Node != "foo" {
-				r.Fatalf("bad: %v", resp.Coordinates)
-			}
-			verifyCoordinatesEqual(t, resp.Coordinates[0].Coord, arg2.Coord) // bar
-			verifyCoordinatesEqual(t, resp.Coordinates[1].Coord, arg3.Coord) // baz
-			verifyCoordinatesEqual(t, resp.Coordinates[2].Coord, arg1.Coord)
-		}) // foo
-
+	// Now query back for all the nodes.
+	retry.Run("", t, func(r *retry.R) {
+		arg := structs.DCSpecificRequest{
+			Datacenter: "dc1",
+		}
+		resp := structs.IndexedCoordinates{}
+		if err := msgpackrpc.CallWithCodec(codec, "Coordinate.ListNodes", &arg, &resp); err != nil {
+			r.Fatalf("err: %v", err)
+		}
+		if len(resp.Coordinates) != 3 ||
+			resp.Coordinates[0].Node != "bar" ||
+			resp.Coordinates[1].Node != "baz" ||
+			resp.Coordinates[2].Node != "foo" {
+			r.Fatalf("bad: %v", resp.Coordinates)
+		}
+		verifyCoordinatesEqual(t, resp.Coordinates[0].Coord, arg2.Coord) // bar
+		verifyCoordinatesEqual(t, resp.Coordinates[1].Coord, arg3.Coord) // baz
+		verifyCoordinatesEqual(t, resp.Coordinates[2].Coord, arg1.Coord) // foo
+	})
 }
 
 func TestCoordinate_ListNodes_ACLFilter(t *testing.T) {
@@ -443,24 +439,21 @@ func TestCoordinate_ListNodes_ACLFilter(t *testing.T) {
 	if err := msgpackrpc.CallWithCodec(codec, "Coordinate.Update", &arg3, &out); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	retry.
-
-		// Wait for all the coordinate updates to apply. Since we aren't
-		// enforcing version 8 ACLs, this should also allow us to read
-		// everything back without a token.
-		Run("", t, func(r *retry.R) {
-
-			arg := structs.DCSpecificRequest{
-				Datacenter: "dc1",
-			}
-			resp := structs.IndexedCoordinates{}
-			if err := msgpackrpc.CallWithCodec(codec, "Coordinate.ListNodes", &arg, &resp); err != nil {
-				r.Fatalf("err: %v", err)
-			}
-			if len(resp.Coordinates) == 3 {
-				r.Fatal(nil)
-			}
-		})
+	// Wait for all the coordinate updates to apply. Since we aren't
+	// enforcing version 8 ACLs, this should also allow us to read
+	// everything back without a token.
+	retry.Run("", t, func(r *retry.R) {
+		arg := structs.DCSpecificRequest{
+			Datacenter: "dc1",
+		}
+		resp := structs.IndexedCoordinates{}
+		if err := msgpackrpc.CallWithCodec(codec, "Coordinate.ListNodes", &arg, &resp); err != nil {
+			r.Fatalf("err: %v", err)
+		}
+		if got, want := len(resp.Coordinates), 3; got != want {
+			r.Fatalf("got %d coordinates want %d", got, want)
+		}
+	})
 
 	// Now that we've waited for the batch processing to ingest the
 	// coordinates we can do the rest of the requests without the loop. We

@@ -42,7 +42,7 @@ func TestCatalog_Nodes(t *testing.T) {
 			{
 				ID:         s.Config.NodeID,
 				Node:       s.Config.NodeName,
-				Address:    "127.0.0.2",
+				Address:    "127.0.0.1",
 				Datacenter: "dc1",
 				TaggedAddresses: map[string]string{
 					"lan": "127.0.0.1",
@@ -67,40 +67,36 @@ func TestCatalog_Nodes_MetaFilter(t *testing.T) {
 	defer s.Stop()
 
 	catalog := c.Catalog()
-	retry.
-
-		// Make sure we get the node back when filtering by its metadata
-		Run("", t, func(r *retry.R) {
-
-			nodes, meta, err := catalog.Nodes(&QueryOptions{NodeMeta: meta})
-			if err != nil {
-				r.Fatal(err)
-			}
-
-			if meta.LastIndex == 0 {
-				r.Fatalf("Bad: %v", meta)
-			}
-
-			if len(nodes) == 0 {
-				r.Fatalf("Bad: %v", nodes)
-			}
-
-			if _, ok := nodes[0].TaggedAddresses["wan"]; !ok {
-				r.Fatalf("Bad: %v", nodes[0])
-			}
-
-			if v, ok := nodes[0].Meta["somekey"]; !ok || v != "somevalue" {
-				r.Fatalf("Bad: %v", nodes[0].Meta)
-			}
-
-			if nodes[0].Datacenter != "dc1" {
-				r.Fatalf("Bad datacenter: %v", nodes[0])
-			}
-		})
+	// Make sure we get the node back when filtering by its metadata
 	retry.Run("", t, func(r *retry.R) {
+		nodes, meta, err := catalog.Nodes(&QueryOptions{NodeMeta: meta})
+		if err != nil {
+			r.Fatal(err)
+		}
 
+		if meta.LastIndex == 0 {
+			r.Fatalf("Bad: %v", meta)
+		}
+
+		if len(nodes) == 0 {
+			r.Fatalf("Bad: %v", nodes)
+		}
+
+		if _, ok := nodes[0].TaggedAddresses["wan"]; !ok {
+			r.Fatalf("Bad: %v", nodes[0])
+		}
+
+		if v, ok := nodes[0].Meta["somekey"]; !ok || v != "somevalue" {
+			r.Fatalf("Bad: %v", nodes[0].Meta)
+		}
+
+		if nodes[0].Datacenter != "dc1" {
+			r.Fatalf("Bad datacenter: %v", nodes[0])
+		}
+	})
+
+	retry.Run("", t, func(r *retry.R) {
 		// Get nothing back when we use an invalid filter
-
 		nodes, meta, err := catalog.Nodes(&QueryOptions{NodeMeta: map[string]string{"nope": "nope"}})
 		if err != nil {
 			r.Fatal(err)
@@ -114,7 +110,6 @@ func TestCatalog_Nodes_MetaFilter(t *testing.T) {
 			r.Fatalf("Bad: %v", nodes)
 		}
 	})
-
 }
 
 func TestCatalog_Services(t *testing.T) {
@@ -124,7 +119,6 @@ func TestCatalog_Services(t *testing.T) {
 
 	catalog := c.Catalog()
 	retry.Run("", t, func(r *retry.R) {
-
 		services, meta, err := catalog.Services(nil)
 		if err != nil {
 			r.Fatal(err)
@@ -138,7 +132,6 @@ func TestCatalog_Services(t *testing.T) {
 			r.Fatalf("Bad: %v", services)
 		}
 	})
-
 }
 
 func TestCatalog_Services_NodeMetaFilter(t *testing.T) {
@@ -149,28 +142,24 @@ func TestCatalog_Services_NodeMetaFilter(t *testing.T) {
 	defer s.Stop()
 
 	catalog := c.Catalog()
-	retry.
-
-		// Make sure we get the service back when filtering by the node's metadata
-		Run("", t, func(r *retry.R) {
-
-			services, meta, err := catalog.Services(&QueryOptions{NodeMeta: meta})
-			if err != nil {
-				r.Fatal(err)
-			}
-
-			if meta.LastIndex == 0 {
-				r.Fatalf("Bad: %v", meta)
-			}
-
-			if len(services) == 0 {
-				r.Fatalf("Bad: %v", services)
-			}
-		})
+	// Make sure we get the service back when filtering by the node's metadata
 	retry.Run("", t, func(r *retry.R) {
+		services, meta, err := catalog.Services(&QueryOptions{NodeMeta: meta})
+		if err != nil {
+			r.Fatal(err)
+		}
 
+		if meta.LastIndex == 0 {
+			r.Fatalf("Bad: %v", meta)
+		}
+
+		if len(services) == 0 {
+			r.Fatalf("Bad: %v", services)
+		}
+	})
+
+	retry.Run("", t, func(r *retry.R) {
 		// Get nothing back when using an invalid filter
-
 		services, meta, err := catalog.Services(&QueryOptions{NodeMeta: map[string]string{"nope": "nope"}})
 		if err != nil {
 			r.Fatal(err)
@@ -184,7 +173,6 @@ func TestCatalog_Services_NodeMetaFilter(t *testing.T) {
 			r.Fatalf("Bad: %v", services)
 		}
 	})
-
 }
 
 func TestCatalog_Service(t *testing.T) {
@@ -194,7 +182,6 @@ func TestCatalog_Service(t *testing.T) {
 
 	catalog := c.Catalog()
 	retry.Run("", t, func(r *retry.R) {
-
 		services, meta, err := catalog.Service("consul", "", nil)
 		if err != nil {
 			r.Fatal(err)
@@ -212,7 +199,6 @@ func TestCatalog_Service(t *testing.T) {
 			r.Fatalf("Bad datacenter: %v", services[0])
 		}
 	})
-
 }
 
 func TestCatalog_Service_NodeMetaFilter(t *testing.T) {
@@ -225,7 +211,6 @@ func TestCatalog_Service_NodeMetaFilter(t *testing.T) {
 
 	catalog := c.Catalog()
 	retry.Run("", t, func(r *retry.R) {
-
 		services, meta, err := catalog.Service("consul", "", &QueryOptions{NodeMeta: meta})
 		if err != nil {
 			r.Fatal(err)
@@ -243,7 +228,6 @@ func TestCatalog_Service_NodeMetaFilter(t *testing.T) {
 			r.Fatalf("Bad datacenter: %v", services[0])
 		}
 	})
-
 }
 
 func TestCatalog_Node(t *testing.T) {
@@ -254,7 +238,6 @@ func TestCatalog_Node(t *testing.T) {
 	catalog := c.Catalog()
 	name, _ := c.Agent().NodeName()
 	retry.Run("", t, func(r *retry.R) {
-
 		info, meta, err := catalog.Node(name, nil)
 		if err != nil {
 			r.Fatal(err)
@@ -276,7 +259,6 @@ func TestCatalog_Node(t *testing.T) {
 			r.Fatalf("Bad datacenter: %v", info)
 		}
 	})
-
 }
 
 func TestCatalog_Registration(t *testing.T) {
@@ -311,7 +293,6 @@ func TestCatalog_Registration(t *testing.T) {
 		Check:      check,
 	}
 	retry.Run("", t, func(r *retry.R) {
-
 		if _, err := catalog.Register(reg, nil); err != nil {
 			r.Fatal(err)
 		}
@@ -350,8 +331,8 @@ func TestCatalog_Registration(t *testing.T) {
 	if _, err := catalog.Deregister(dereg, nil); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	retry.Run("", t, func(r *retry.R) {
 
+	retry.Run("", t, func(r *retry.R) {
 		node, _, err := catalog.Node("foobar", nil)
 		if err != nil {
 			r.Fatal(err)
@@ -373,8 +354,8 @@ func TestCatalog_Registration(t *testing.T) {
 	if _, err := catalog.Deregister(dereg, nil); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	retry.Run("", t, func(r *retry.R) {
 
+	retry.Run("", t, func(r *retry.R) {
 		health, _, err := c.Health().Node("foobar", nil)
 		if err != nil {
 			r.Fatal(err)
@@ -395,8 +376,8 @@ func TestCatalog_Registration(t *testing.T) {
 	if _, err := catalog.Deregister(dereg, nil); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	retry.Run("", t, func(r *retry.R) {
 
+	retry.Run("", t, func(r *retry.R) {
 		node, _, err := catalog.Node("foobar", nil)
 		if err != nil {
 			r.Fatal(err)
@@ -406,7 +387,6 @@ func TestCatalog_Registration(t *testing.T) {
 			r.Fatalf("node is not deregistered: %v", node)
 		}
 	})
-
 }
 
 func TestCatalog_EnableTagOverride(t *testing.T) {
@@ -429,8 +409,8 @@ func TestCatalog_EnableTagOverride(t *testing.T) {
 		Address:    "192.168.10.10",
 		Service:    service,
 	}
-	retry.Run("", t, func(r *retry.R) {
 
+	retry.Run("", t, func(r *retry.R) {
 		if _, err := catalog.Register(reg, nil); err != nil {
 			r.Fatal(err)
 		}
@@ -461,8 +441,8 @@ func TestCatalog_EnableTagOverride(t *testing.T) {
 	})
 
 	service.EnableTagOverride = true
-	retry.Run("", t, func(r *retry.R) {
 
+	retry.Run("", t, func(r *retry.R) {
 		if _, err := catalog.Register(reg, nil); err != nil {
 			r.Fatal(err)
 		}
@@ -491,5 +471,4 @@ func TestCatalog_EnableTagOverride(t *testing.T) {
 			r.Fatal("tag override not set")
 		}
 	})
-
 }

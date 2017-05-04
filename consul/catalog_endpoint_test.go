@@ -605,10 +605,9 @@ func TestCatalog_ListNodes(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	retry.Run("", t, func(r *retry.R) {
-
 		msgpackrpc.CallWithCodec(codec, "Catalog.ListNodes", &args, &out)
-		if len(out.Nodes) != 2 {
-			r.Fatal(nil)
+		if got, want := len(out.Nodes), 2; got != want {
+			r.Fatalf("got %d nodes want %d", got, want)
 		}
 	})
 
@@ -648,10 +647,9 @@ func TestCatalog_ListNodes_NodeMetaFilter(t *testing.T) {
 	}
 	var out structs.IndexedNodes
 	retry.Run("", t, func(r *retry.R) {
-
 		msgpackrpc.CallWithCodec(codec, "Catalog.ListNodes", &args, &out)
-		if len(out.Nodes) != 1 {
-			r.Fatal(nil)
+		if got, want := len(out.Nodes), 1; got != want {
+			r.Fatalf("got %d nodes want %d", got, want)
 		}
 	})
 
@@ -895,10 +893,9 @@ func TestCatalog_ListNodes_DistanceSort(t *testing.T) {
 	}
 	var out structs.IndexedNodes
 	retry.Run("", t, func(r *retry.R) {
-
 		msgpackrpc.CallWithCodec(codec, "Catalog.ListNodes", &args, &out)
-		if len(out.Nodes) != 5 {
-			r.Fatal(nil)
+		if got, want := len(out.Nodes), 5; got != want {
+			r.Fatalf("got %d nodes want %d", got, want)
 		}
 	})
 
@@ -925,10 +922,9 @@ func TestCatalog_ListNodes_DistanceSort(t *testing.T) {
 		Source:     structs.QuerySource{Datacenter: "dc1", Node: "foo"},
 	}
 	retry.Run("", t, func(r *retry.R) {
-
 		msgpackrpc.CallWithCodec(codec, "Catalog.ListNodes", &args, &out)
-		if len(out.Nodes) != 5 {
-			r.Fatal(nil)
+		if got, want := len(out.Nodes), 5; got != want {
+			r.Fatalf("got %d nodes want %d", got, want)
 		}
 	})
 

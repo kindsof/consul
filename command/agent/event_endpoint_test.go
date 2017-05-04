@@ -122,8 +122,8 @@ func TestEventList(t *testing.T) {
 		if err := srv.agent.UserEvent("dc1", "root", p); err != nil {
 			t.Fatalf("err: %v", err)
 		}
-		retry.Run("", t, func(r *retry.R) {
 
+		retry.Run("", t, func(r *retry.R) {
 			req, err := http.NewRequest("GET", "/v1/event/list", nil)
 			if err != nil {
 				r.Fatal(err)
@@ -146,7 +146,6 @@ func TestEventList(t *testing.T) {
 				r.Fatalf("bad: %#v", header)
 			}
 		})
-
 	})
 }
 
@@ -161,8 +160,8 @@ func TestEventList_Filter(t *testing.T) {
 		if err := srv.agent.UserEvent("dc1", "root", p); err != nil {
 			t.Fatalf("err: %v", err)
 		}
-		retry.Run("", t, func(r *retry.R) {
 
+		retry.Run("", t, func(r *retry.R) {
 			req, err := http.NewRequest("GET", "/v1/event/list?name=foo", nil)
 			if err != nil {
 				r.Fatal(err)
@@ -185,7 +184,6 @@ func TestEventList_Filter(t *testing.T) {
 				r.Fatalf("bad: %#v", header)
 			}
 		})
-
 	})
 }
 
@@ -204,7 +202,6 @@ func TestEventList_ACLFilter(t *testing.T) {
 	// Try no token.
 	{
 		retry.Run("", t, func(r *retry.R) {
-
 			req, err := http.NewRequest("GET", "/v1/event/list", nil)
 			if err != nil {
 				r.Fatal(err)
@@ -223,13 +220,11 @@ func TestEventList_ACLFilter(t *testing.T) {
 				r.Fatalf("bad: %#v", list)
 			}
 		})
-
 	}
 
 	// Try the root token.
 	{
 		retry.Run("", t, func(r *retry.R) {
-
 			req, err := http.NewRequest("GET", "/v1/event/list?token=root", nil)
 			if err != nil {
 				r.Fatal(err)
@@ -248,7 +243,6 @@ func TestEventList_ACLFilter(t *testing.T) {
 				r.Fatalf("bad: %#v", list)
 			}
 		})
-
 	}
 }
 
@@ -261,7 +255,6 @@ func TestEventList_Blocking(t *testing.T) {
 
 		var index string
 		retry.Run("", t, func(r *retry.R) {
-
 			req, err := http.NewRequest("GET", "/v1/event/list", nil)
 			if err != nil {
 				r.Fatal(err)
@@ -285,8 +278,8 @@ func TestEventList_Blocking(t *testing.T) {
 				t.Fatalf("err: %v", err)
 			}
 		}()
-		retry.Run("", t, func(r *retry.R) {
 
+		retry.Run("", t, func(r *retry.R) {
 			url := "/v1/event/list?index=" + index
 			req, err := http.NewRequest("GET", url, nil)
 			if err != nil {
@@ -306,7 +299,6 @@ func TestEventList_Blocking(t *testing.T) {
 				r.Fatalf("bad: %#v", list)
 			}
 		})
-
 	})
 }
 

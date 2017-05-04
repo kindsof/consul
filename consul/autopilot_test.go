@@ -51,13 +51,10 @@ func testCleanupDeadServer(t *testing.T, raftVersion int) {
 
 	for _, s := range servers {
 		retry.Run("", t, func(r *retry.R) {
-
-			peers, _ := s.numPeers()
-			if peers != 3 {
-				r.Fatal(nil)
+			if got, want := numPeers(s), 3; got != want {
+				r.Fatalf("got %d peers want %d", got, want)
 			}
 		})
-
 	}
 
 	// Bring up a new server
@@ -68,7 +65,6 @@ func testCleanupDeadServer(t *testing.T, raftVersion int) {
 	// Kill a non-leader server
 	s3.Shutdown()
 	retry.Run("", t, func(r *retry.R) {
-
 		alive := 0
 		for _, m := range s1.LANMembers() {
 			if m.Status == serf.StatusAlive {
@@ -89,13 +85,10 @@ func testCleanupDeadServer(t *testing.T, raftVersion int) {
 	// Make sure the dead server is removed and we're back to 3 total peers
 	for _, s := range servers {
 		retry.Run("", t, func(r *retry.R) {
-
-			peers, _ := s.numPeers()
-			if peers != 3 {
-				r.Fatal(nil)
+			if got, want := numPeers(s), 3; got != want {
+				r.Fatalf("got %d peers want %d", got, want)
 			}
 		})
-
 	}
 }
 
@@ -126,8 +119,7 @@ func TestAutopilot_CleanupDeadServerPeriodic(t *testing.T) {
 	servers := []*Server{s1, s2, s3, s4}
 
 	// Join the servers to s1
-	addr := fmt.Sprintf("127.0.0.1:%d",
-		s1.config.SerfLANConfig.MemberlistConfig.BindPort)
+	addr := fmt.Sprintf("127.0.0.1:%d", s1.config.SerfLANConfig.MemberlistConfig.BindPort)
 
 	for _, s := range servers[1:] {
 		if _, err := s.JoinLAN([]string{addr}); err != nil {
@@ -137,13 +129,10 @@ func TestAutopilot_CleanupDeadServerPeriodic(t *testing.T) {
 
 	for _, s := range servers {
 		retry.Run("", t, func(r *retry.R) {
-
-			peers, _ := s.numPeers()
-			if peers != 4 {
-				r.Fatal(nil)
+			if got, want := numPeers(s), 4; got != want {
+				r.Fatalf("got %d peers want %d", got, want)
 			}
 		})
-
 	}
 
 	// Kill a non-leader server
@@ -152,13 +141,10 @@ func TestAutopilot_CleanupDeadServerPeriodic(t *testing.T) {
 	// Should be removed from the peers automatically
 	for _, s := range []*Server{s1, s2, s3} {
 		retry.Run("", t, func(r *retry.R) {
-
-			peers, _ := s.numPeers()
-			if peers != 3 {
-				r.Fatal(nil)
+			if got, want := numPeers(s), 3; got != want {
+				r.Fatalf("got %d peers want %d", got, want)
 			}
 		})
-
 	}
 }
 
@@ -193,13 +179,10 @@ func TestAutopilot_CleanupStaleRaftServer(t *testing.T) {
 
 	for _, s := range servers {
 		retry.Run("", t, func(r *retry.R) {
-
-			peers, _ := s.numPeers()
-			if peers != 3 {
-				r.Fatal(nil)
+			if got, want := numPeers(s), 3; got != want {
+				r.Fatalf("got %d peers want %d", got, want)
 			}
 		})
-
 	}
 
 	testrpc.WaitForLeader(t, s1.RPC, "dc1")
@@ -221,13 +204,10 @@ func TestAutopilot_CleanupStaleRaftServer(t *testing.T) {
 	// Wait for s4 to be removed
 	for _, s := range []*Server{s1, s2, s3} {
 		retry.Run("", t, func(r *retry.R) {
-
-			peers, _ := s.numPeers()
-			if peers != 3 {
-				r.Fatal(nil)
+			if got, want := numPeers(s), 3; got != want {
+				r.Fatalf("got %d peers want %d", got, want)
 			}
 		})
-
 	}
 }
 
@@ -303,14 +283,12 @@ func TestAutopilot_PromoteNonVoter(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	retry.Run("", t, func(r *retry.R) {
-
 		future := s1.raft.GetConfiguration()
 		if err := future.Error(); err != nil {
 			r.Fatal(err)
 		}
 
 		servers := future.Configuration().Servers
-
 		if len(servers) != 3 {
 			r.Fatalf("bad: %v", servers)
 		}
@@ -321,5 +299,4 @@ func TestAutopilot_PromoteNonVoter(t *testing.T) {
 			r.Fatalf("bad: %v", servers)
 		}
 	})
-
 }

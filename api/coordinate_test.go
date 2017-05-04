@@ -13,7 +13,6 @@ func TestCoordinate_Datacenters(t *testing.T) {
 
 	coordinate := c.Coordinate()
 	retry.Run("", t, func(r *retry.R) {
-
 		datacenters, err := coordinate.Datacenters()
 		if err != nil {
 			r.Fatal(err)
@@ -23,7 +22,6 @@ func TestCoordinate_Datacenters(t *testing.T) {
 			r.Fatalf("Bad: %v", datacenters)
 		}
 	})
-
 }
 
 func TestCoordinate_Nodes(t *testing.T) {
@@ -33,16 +31,14 @@ func TestCoordinate_Nodes(t *testing.T) {
 
 	coordinate := c.Coordinate()
 	retry.Run("", t, func(r *retry.R) {
-
 		_, _, err := coordinate.Nodes(nil)
 		if err != nil {
 			r.Fatal(err)
 		}
+
+		// There's not a good way to populate coordinates without
+		// waiting for them to calculate and update, so the best
+		// we can do is call the endpoint and make sure we don't
+		// get an error.
 	})
-
-	// There's not a good way to populate coordinates without
-	// waiting for them to calculate and update, so the best
-	// we can do is call the endpoint and make sure we don't
-	// get an error.
-
 }

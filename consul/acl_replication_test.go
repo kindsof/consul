@@ -364,21 +364,21 @@ func TestACLReplication(t *testing.T) {
 		}
 	}
 
-	checkSame := func() (bool, error) {
+	checkSame := func() error {
 		index, remote, err := s1.fsm.State().ACLList(nil)
 		if err != nil {
-			return false, err
+			return err
 		}
 		_, local, err := s2.fsm.State().ACLList(nil)
 		if err != nil {
-			return false, err
+			return err
 		}
-		if len(remote) != len(local) {
-			return false, nil
+		if got, want := len(remote), len(local); got != want {
+			return fmt.Errorf("got %d remote ACLs want %d", got, want)
 		}
 		for i, acl := range remote {
 			if !acl.IsSame(local[i]) {
-				return false, nil
+				return fmt.Errorf("ACLs differ")
 			}
 		}
 
@@ -389,19 +389,17 @@ func TestACLReplication(t *testing.T) {
 		if !status.Enabled || !status.Running ||
 			status.ReplicatedIndex != index ||
 			status.SourceDatacenter != "dc1" {
-			return false, nil
+			return fmt.Errorf("ACL replication status differs")
 		}
 
-		return true, nil
+		return nil
 	}
-	retry.
-
-		// Wait for the replica to converge.
-		Run("", t, func(r *retry.R) {
-			if err := checkSame(); err != nil {
-				r.Fatal(err)
-			}
-		})
+	// Wait for the replica to converge.
+	retry.Run("", t, func(r *retry.R) {
+		if err := checkSame(); err != nil {
+			r.Fatal(err)
+		}
+	})
 
 	// Create more new tokens.
 	for i := 0; i < 1000; i++ {
@@ -420,14 +418,12 @@ func TestACLReplication(t *testing.T) {
 			t.Fatalf("err: %v", err)
 		}
 	}
-	retry.
-
-		// Wait for the replica to converge.
-		Run("", t, func(r *retry.R) {
-			if err := checkSame(); err != nil {
-				r.Fatal(err)
-			}
-		})
+	// Wait for the replica to converge.
+	retry.Run("", t, func(r *retry.R) {
+		if err := checkSame(); err != nil {
+			r.Fatal(err)
+		}
+	})
 
 	// Delete a token.
 	arg := structs.ACLRequest{
@@ -442,13 +438,10 @@ func TestACLReplication(t *testing.T) {
 	if err := s1.RPC("ACL.Apply", &arg, &dontCare); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	retry.
-
-		// Wait for the replica to converge.
-		Run("", t, func(r *retry.R) {
-			if err := checkSame(); err != nil {
-				r.Fatal(err)
-			}
-		})
-
+	// Wait for the replica to converge.
+	retry.Run("", t, func(r *retry.R) {
+		if err := checkSame(); err != nil {
+			r.Fatal(err)
+		}
+	})
 }

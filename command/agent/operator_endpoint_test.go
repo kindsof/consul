@@ -452,7 +452,6 @@ func TestOperator_ServerHealth(t *testing.T) {
 			t.Fatalf("err: %v", err)
 		}
 		retry.Run("", t, func(r *retry.R) {
-
 			resp := httptest.NewRecorder()
 			obj, err := srv.OperatorServerHealth(resp, req)
 			if err != nil {
@@ -473,7 +472,6 @@ func TestOperator_ServerHealth(t *testing.T) {
 				r.Fatalf("bad: %v", out)
 			}
 		})
-
 	}, cb)
 }
 
@@ -490,7 +488,6 @@ func TestOperator_ServerHealth_Unhealthy(t *testing.T) {
 			t.Fatalf("err: %v", err)
 		}
 		retry.Run("", t, func(r *retry.R) {
-
 			resp := httptest.NewRecorder()
 			obj, err := srv.OperatorServerHealth(resp, req)
 			if err != nil {
@@ -506,9 +503,8 @@ func TestOperator_ServerHealth_Unhealthy(t *testing.T) {
 			if len(out.Servers) != 1 ||
 				out.Healthy ||
 				out.Servers[0].Name != srv.agent.config.NodeName {
-				r.Fatalf("bad: %v", out)
+				r.Fatalf("bad: %#v", out.Servers)
 			}
 		})
-
 	}, cb)
 }

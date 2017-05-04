@@ -230,7 +230,6 @@ func TestOperator_ServerHealth(t *testing.T) {
 
 	testrpc.WaitForLeader(t, s1.RPC, "dc1")
 	retry.Run("", t, func(r *retry.R) {
-
 		arg := structs.DCSpecificRequest{
 			Datacenter: "dc1",
 		}
@@ -252,14 +251,13 @@ func TestOperator_ServerHealth(t *testing.T) {
 		for _, s := range reply.Servers {
 			isLeader := s1.raft.Leader() == raft.ServerAddress(s.Address)
 			if isLeader && s.LastContact != 0 {
-				return false, fmt.Errorf("bad: %v", reply)
+				r.Fatalf("bad: %v", reply)
 			}
 			if !isLeader && s.LastContact <= 0 {
-				return false, fmt.Errorf("bad: %v", reply)
+				r.Fatalf("bad: %v", reply)
 			}
 		}
 	})
-
 }
 
 func TestOperator_ServerHealth_UnsupportedRaftVersion(t *testing.T) {

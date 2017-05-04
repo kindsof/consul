@@ -157,20 +157,14 @@ func TestServer_JoinLAN(t *testing.T) {
 	if _, err := s2.JoinLAN([]string{addr}); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	retry.
-
-		// Check the members
-		Run("", t, func(r *retry.R) {
-			if len(s1.LANMembers()) != 2 {
-				r.Fatal(nil)
-			}
-		})
 	retry.Run("", t, func(r *retry.R) {
-		if len(s2.LANMembers()) != 2 {
-			r.Fatal(nil)
+		if got, want := len(s1.LANMembers()), 2; got != want {
+			r.Fatalf("got %d s1 LAN members want %d", got, want)
+		}
+		if got, want := len(s2.LANMembers()), 2; got != want {
+			r.Fatalf("got %d s2 LAN members want %d", got, want)
 		}
 	})
-
 }
 
 func TestServer_JoinWAN(t *testing.T) {
@@ -188,17 +182,12 @@ func TestServer_JoinWAN(t *testing.T) {
 	if _, err := s2.JoinWAN([]string{addr}); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	retry.
-
-		// Check the members
-		Run("", t, func(r *retry.R) {
-			if len(s1.WANMembers()) != 2 {
-				r.Fatal(nil)
-			}
-		})
 	retry.Run("", t, func(r *retry.R) {
-		if len(s2.WANMembers()) != 2 {
-			r.Fatal(nil)
+		if got, want := len(s1.WANMembers()), 2; got != want {
+			r.Fatalf("got %d s1 WAN members want %d", got, want)
+		}
+		if got, want := len(s2.WANMembers()), 2; got != want {
+			r.Fatalf("got %d s2 WAN members want %d", got, want)
 		}
 	})
 
@@ -207,11 +196,10 @@ func TestServer_JoinWAN(t *testing.T) {
 		t.Fatalf("remote consul missing")
 	}
 	retry.Run("", t, func(r *retry.R) {
-		if len(s2.router.GetDatacenters()) != 2 {
-			r.Fatal(nil)
+		if got, want := len(s2.router.GetDatacenters()), 2; got != want {
+			r.Fatalf("got %d data centers want %d", got, want)
 		}
 	})
-
 }
 
 func TestServer_JoinWAN_Flood(t *testing.T) {
@@ -230,13 +218,12 @@ func TestServer_JoinWAN_Flood(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-	for i, s := range []*Server{s1, s2} {
+	for _, s := range []*Server{s1, s2} {
 		retry.Run("", t, func(r *retry.R) {
-			if len(s.WANMembers()) != 2 {
-				r.Fatal(nil)
+			if got, want := len(s.WANMembers()), 2; got != want {
+				r.Fatalf("got %d WAN members want %d", got, want)
 			}
 		})
-
 	}
 
 	dir3, s3 := testServer(t)
@@ -251,13 +238,12 @@ func TestServer_JoinWAN_Flood(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-	for i, s := range []*Server{s1, s2, s3} {
+	for _, s := range []*Server{s1, s2, s3} {
 		retry.Run("", t, func(r *retry.R) {
-			if len(s.WANMembers()) != 3 {
-				r.Fatal(nil)
+			if got, want := len(s.WANMembers()), 3; got != want {
+				r.Fatalf("got %d WAN members want %d", got, want)
 			}
 		})
-
 	}
 }
 
@@ -295,39 +281,18 @@ func TestServer_JoinSeparateLanAndWanAddresses(t *testing.T) {
 	if _, err := s3.JoinLAN([]string{addrs2}); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	retry.
-
-		// Check the WAN members on s1
-		Run("", t, func(r *retry.R) {
-			if len(s1.WANMembers()) != 3 {
-				r.Fatal(nil)
-			}
-		})
 	retry.Run("", t, func(r *retry.R) {
-		if
-
-		// Check the WAN members on s2
-
-		len(s2.WANMembers()) != 3 {
-			r.Fatal(nil)
+		if got, want := len(s1.WANMembers()), 2; got != want {
+			r.Fatalf("got %d s1 WAN members want %d", got, want)
 		}
-	})
-	retry.Run("", t, func(r *retry.R) {
-		if
-
-		// Check the LAN members on s2
-
-		len(s2.LANMembers()) != 2 {
-			r.Fatal(nil)
+		if got, want := len(s2.WANMembers()), 2; got != want {
+			r.Fatalf("got %d s2 WAN members want %d", got, want)
 		}
-	})
-	retry.Run("", t, func(r *retry.R) {
-		if
-
-		// Check the LAN members on s3
-
-		len(s3.LANMembers()) != 2 {
-			r.Fatal(nil)
+		if got, want := len(s2.LANMembers()), 2; got != want {
+			r.Fatalf("got %d s2 LAN members want %d", got, want)
+		}
+		if got, want := len(s3.LANMembers()), 2; got != want {
+			r.Fatalf("got %d s3 WAN members want %d", got, want)
 		}
 	})
 
@@ -384,20 +349,12 @@ func TestServer_LeaveLeader(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-	var p1 int
-	var p2 int
 	retry.Run("", t, func(r *retry.R) {
-
-		p1, _ = s1.numPeers()
-		if p1 != 2 {
-			r.Fatalf("%d", p1)
+		if got, want := numPeers(s1), 2; got != want {
+			r.Fatalf("got %d s1 peers want %d", got, want)
 		}
-	})
-	retry.Run("", t, func(r *retry.R) {
-
-		p2, _ = s2.numPeers()
-		if p2 != 2 {
-			r.Fatalf("%d", p1)
+		if got, want := numPeers(s2), 2; got != want {
+			r.Fatalf("got %d s2 peers want %d", got, want)
 		}
 	})
 
@@ -412,16 +369,14 @@ func TestServer_LeaveLeader(t *testing.T) {
 	}
 
 	// Should lose a peer
-	for _, s := range []*Server{s1, s2} {
-		retry.Run("", t, func(r *retry.R) {
-
-			p1, _ = s.numPeers()
-			if p1 != 1 {
-				r.Fatal(nil)
-			}
-		})
-
-	}
+	retry.Run("", t, func(r *retry.R) {
+		if got, want := numPeers(s1), 1; got != want {
+			r.Fatalf("got %d s1 peers want %d", got, want)
+		}
+		if got, want := numPeers(s2), 1; got != want {
+			r.Fatalf("got %d s2 peers want %d", got, want)
+		}
+	})
 }
 
 func TestServer_Leave(t *testing.T) {
@@ -441,20 +396,12 @@ func TestServer_Leave(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-	var p1 int
-	var p2 int
 	retry.Run("", t, func(r *retry.R) {
-
-		p1, _ = s1.numPeers()
-		if p1 != 2 {
-			r.Fatalf("%d", p1)
+		if got, want := numPeers(s1), 2; got != want {
+			r.Fatalf("got %d s1 peers want %d", got, want)
 		}
-	})
-	retry.Run("", t, func(r *retry.R) {
-
-		p2, _ = s2.numPeers()
-		if p2 != 2 {
-			r.Fatalf("%d", p1)
+		if got, want := numPeers(s2), 2; got != want {
+			r.Fatalf("got %d s2 peers want %d", got, want)
 		}
 	})
 
@@ -469,16 +416,14 @@ func TestServer_Leave(t *testing.T) {
 	}
 
 	// Should lose a peer
-	for _, s := range []*Server{s1, s2} {
-		retry.Run("", t, func(r *retry.R) {
-
-			p1, _ = s.numPeers()
-			if p1 != 1 {
-				r.Fatal(nil)
-			}
-		})
-
-	}
+	retry.Run("", t, func(r *retry.R) {
+		if got, want := numPeers(s1), 1; got != want {
+			r.Fatalf("got %d s1 peers want %d", got, want)
+		}
+		if got, want := numPeers(s2), 1; got != want {
+			r.Fatalf("got %d s2 peers want %d", got, want)
+		}
+	})
 }
 
 func TestServer_RPC(t *testing.T) {
@@ -522,36 +467,23 @@ func TestServer_JoinLAN_TLS(t *testing.T) {
 	if _, err := s2.JoinLAN([]string{addr}); err != nil {
 		t.Fatalf("err: %v", err)
 	}
-	retry.
-
-		// Check the members
-		Run("", t, func(r *retry.R) {
-			if len(s1.LANMembers()) != 2 {
-				r.Fatal(nil)
-			}
-		})
 	retry.Run("", t, func(r *retry.R) {
-		if len(s2.LANMembers()) != 2 {
-			r.Fatal(nil)
+		if got, want := len(s1.LANMembers()), 2; got != want {
+			r.Fatalf("got %d s1 LAN members want %d", got, want)
+		}
+		if got, want := len(s2.LANMembers()), 2; got != want {
+			r.Fatalf("got %d s2 LAN members want %d", got, want)
 		}
 	})
+	// Verify Raft has established a peer
 	retry.Run("", t, func(r *retry.R) {
-
-		// Verify Raft has established a peer
-
-		peers, _ := s1.numPeers()
-		if peers != 2 {
-			r.Fatal(nil)
+		if got, want := numPeers(s1), 2; got != want {
+			r.Fatalf("got %d s1 peers want %d", got, want)
+		}
+		if got, want := numPeers(s2), 2; got != want {
+			r.Fatalf("got %d s2 peers want %d", got, want)
 		}
 	})
-	retry.Run("", t, func(r *retry.R) {
-
-		peers, _ := s2.numPeers()
-		if peers != 2 {
-			r.Fatal(nil)
-		}
-	})
-
 }
 
 func TestServer_Expect(t *testing.T) {
@@ -581,23 +513,13 @@ func TestServer_Expect(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-	var p1 int
-	var p2 int
-	retry.
-
-		// Should have no peers yet since the bootstrap didn't occur.
-		Run("", t, func(r *retry.R) {
-
-			p1, _ = s1.numPeers()
-			if p1 != 0 {
-				r.Fatalf("%d", p1)
-			}
-		})
+	// Should have no peers yet since the bootstrap didn't occur.
 	retry.Run("", t, func(r *retry.R) {
-
-		p2, _ = s2.numPeers()
-		if p2 != 0 {
-			r.Fatalf("%d", p2)
+		if got, want := numPeers(s1), 0; got != want {
+			r.Fatalf("got %d s1 peers want %d", got, want)
+		}
+		if got, want := numPeers(s2), 0; got != want {
+			r.Fatalf("got %d s2 peers want %d", got, want)
 		}
 	})
 
@@ -606,29 +528,16 @@ func TestServer_Expect(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 
-	var p3 int
-	retry.
-
-		// Now we have three servers so we should bootstrap.
-		Run("", t, func(r *retry.R) {
-
-			p1, _ = s1.numPeers()
-			if p1 != 3 {
-				r.Fatalf("%d", p1)
-			}
-		})
+	// Now we have three servers so we should bootstrap.
 	retry.Run("", t, func(r *retry.R) {
-
-		p2, _ = s2.numPeers()
-		if p2 != 3 {
-			r.Fatalf("%d", p2)
+		if got, want := numPeers(s1), 3; got != want {
+			r.Fatalf("got %d s1 peers want %d", got, want)
 		}
-	})
-	retry.Run("", t, func(r *retry.R) {
-
-		p3, _ = s3.numPeers()
-		if p3 != 3 {
-			r.Fatalf("%d", p3)
+		if got, want := numPeers(s2), 3; got != want {
+			r.Fatalf("got %d s2 peers want %d", got, want)
+		}
+		if got, want := numPeers(s3), 3; got != want {
+			r.Fatalf("got %d s3 peers want %d", got, want)
 		}
 	})
 
@@ -641,12 +550,18 @@ func TestServer_Expect(t *testing.T) {
 	}
 
 	// Wait for the new server to see itself added to the cluster.
-	var p4 int
 	retry.Run("", t, func(r *retry.R) {
-
-		p4, _ = s4.numPeers()
-		if p4 != 4 {
-			r.Fatalf("%d", p4)
+		if got, want := numPeers(s1), 4; got != want {
+			r.Fatalf("got %d s1 peers want %d", got, want)
+		}
+		if got, want := numPeers(s2), 4; got != want {
+			r.Fatalf("got %d s2 peers want %d", got, want)
+		}
+		if got, want := numPeers(s3), 4; got != want {
+			r.Fatalf("got %d s3 peers want %d", got, want)
+		}
+		if got, want := numPeers(s4), 4; got != want {
+			r.Fatalf("got %d s4 peers want %d", got, want)
 		}
 	})
 

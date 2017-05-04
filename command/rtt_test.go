@@ -106,22 +106,19 @@ func TestRTTCommand_Run_LAN(t *testing.T) {
 		a.config.NodeName,
 		"dogs",
 	}
-	retry.
+	// Wait for the updates to get flushed to the data store.
+	retry.Run("", t, func(r *retry.R) {
+		code := c.Run(args)
+		if code != 0 {
+			r.Fatalf("bad: %d: %#v", code, ui.ErrorWriter.String())
+		}
 
-		// Wait for the updates to get flushed to the data store.
-		Run("", t, func(r *retry.R) {
-
-			code := c.Run(args)
-			if code != 0 {
-				r.Fatalf("bad: %d: %#v", code, ui.ErrorWriter.String())
-			}
-
-			// Make sure the proper RTT was reported in the output.
-			expected := fmt.Sprintf("rtt: %s", dist_str)
-			if !strings.Contains(ui.OutputWriter.String(), expected) {
-				r.Fatalf("bad: %#v", ui.OutputWriter.String())
-			}
-		})
+		// Make sure the proper RTT was reported in the output.
+		expected := fmt.Sprintf("rtt: %s", dist_str)
+		if !strings.Contains(ui.OutputWriter.String(), expected) {
+			r.Fatalf("bad: %#v", ui.OutputWriter.String())
+		}
+	})
 
 	// Default to the agent's node.
 	{

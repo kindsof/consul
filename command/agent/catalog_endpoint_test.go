@@ -89,19 +89,18 @@ func TestCatalogDatacenters(t *testing.T) {
 	defer os.RemoveAll(dir)
 	defer srv.Shutdown()
 	defer srv.agent.Shutdown()
-	retry.Run("", t, func(r *retry.R) {
 
+	retry.Run("", t, func(r *retry.R) {
 		obj, err := srv.CatalogDatacenters(nil, nil)
 		if err != nil {
 			r.Fatal(err)
 		}
 
 		dcs := obj.([]string)
-		if len(dcs) != 1 {
-			r.Fatalf("missing dc: %v", dcs)
+		if got, want := len(dcs), 1; got != want {
+			r.Fatalf("got %d data centers want %d", got, want)
 		}
 	})
-
 }
 
 func TestCatalogNodes(t *testing.T) {
@@ -213,14 +212,13 @@ func TestCatalogNodes_WanTranslation(t *testing.T) {
 	testrpc.WaitForLeader(t, srv2.agent.RPC, "dc2")
 
 	// Wait for the WAN join.
-	addr := fmt.Sprintf("127.0.0.1:%d",
-		srv1.agent.config.Ports.SerfWan)
+	addr := fmt.Sprintf("127.0.0.1:%d", srv1.agent.config.Ports.SerfWan)
 	if _, err := srv2.agent.JoinWAN([]string{addr}); err != nil {
 		t.Fatalf("err: %v", err)
 	}
 	retry.Run("", t, func(r *retry.R) {
-		if len(srv1.agent.WANMembers()) <= 1 {
-			r.Fatal(nil)
+		if got, want := len(srv1.agent.WANMembers()), 2; got < want {
+			r.Fatalf("got %d WAN members want at least %d", got, want)
 		}
 	})
 
@@ -699,8 +697,8 @@ func TestCatalogServiceNodes_WanTranslation(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	retry.Run("", t, func(r *retry.R) {
-		if len(srv1.agent.WANMembers()) <= 1 {
-			r.Fatal(nil)
+		if got, want := len(srv1.agent.WANMembers()), 2; got < want {
+			r.Fatalf("got %d WAN members want at least %d", got, want)
 		}
 	})
 
@@ -938,8 +936,8 @@ func TestCatalogNodeServices_WanTranslation(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	retry.Run("", t, func(r *retry.R) {
-		if len(srv1.agent.WANMembers()) <= 1 {
-			r.Fatal(nil)
+		if got, want := len(srv1.agent.WANMembers()), 2; got < want {
+			r.Fatalf("got %d WAN members want at least %d", got, want)
 		}
 	})
 

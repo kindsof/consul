@@ -346,9 +346,10 @@ func TestAgent_Reload(t *testing.T) {
 		cmd.Run(args)
 		close(doneCh)
 	}()
+
 	retry.Run("", t, func(r *retry.R) {
-		if len(cmd.httpServers) != 1 {
-			r.Fatal(nil)
+		if got, want := len(cmd.httpServers), 1; got != want {
+			r.Fatalf("got %d servers want %d", got, want)
 		}
 	})
 
@@ -534,12 +535,12 @@ func TestAgent_Join(t *testing.T) {
 	if len(srv.agent.LANMembers()) != 2 {
 		t.Fatalf("should have 2 members")
 	}
+
 	retry.Run("", t, func(r *retry.R) {
-		if len(a2.LANMembers()) != 2 {
-			r.Fatal(nil)
+		if got, want := len(a2.LANMembers()), 2; got != want {
+			r.Fatalf("got %d LAN members want %d", got, want)
 		}
 	})
-
 }
 
 func TestAgent_Join_WAN(t *testing.T) {
@@ -569,12 +570,12 @@ func TestAgent_Join_WAN(t *testing.T) {
 	if len(srv.agent.WANMembers()) != 2 {
 		t.Fatalf("should have 2 members")
 	}
+
 	retry.Run("", t, func(r *retry.R) {
-		if len(a2.WANMembers()) != 2 {
-			r.Fatal(nil)
+		if got, want := len(a2.WANMembers()), 2; got != want {
+			r.Fatalf("got %d WAN members want %d", got, want)
 		}
 	})
-
 }
 
 func TestAgent_Join_ACLDeny(t *testing.T) {
@@ -663,11 +664,11 @@ func TestAgent_Leave(t *testing.T) {
 		t.Fatalf("Err: %v", obj)
 	}
 	retry.Run("", t, func(r *retry.R) {
-
 		m := srv.agent.LANMembers()
-		success := m[1].Status == serf.StatusLeft
+		if got, want := m[1].Status, serf.StatusLeft; got != want {
+			r.Fatalf("got status %q want %q", got, want)
+		}
 	})
-
 }
 
 func TestAgent_Leave_ACLDeny(t *testing.T) {
@@ -760,9 +761,10 @@ func TestAgent_ForceLeave(t *testing.T) {
 		t.Fatalf("Err: %v", obj)
 	}
 	retry.Run("", t, func(r *retry.R) {
-
 		m := srv.agent.LANMembers()
-		success := m[1].Status == serf.StatusLeft
+		if got, want := m[1].Status, serf.StatusLeft; got != want {
+			r.Fatalf("got status %q want %q", got, want)
+		}
 	})
 
 }
@@ -1926,9 +1928,7 @@ func TestAgent_Monitor(t *testing.T) {
 	}
 
 	// Try to stream logs until we see the expected log line
-	expected := []byte("raft: Initial configuration (index=1)")
 	retry.Run("", t, func(r *retry.R) {
-
 		req, _ = http.NewRequest("GET", "/v1/agent/monitor?loglevel=debug", nil)
 		resp = newClosableRecorder()
 		done := make(chan struct{})
@@ -1942,11 +1942,12 @@ func TestAgent_Monitor(t *testing.T) {
 		resp.Close()
 		<-done
 
-		if bytes.Contains(resp.Body.Bytes(), expected) {
-			r.Fatal(nil)
+		got := resp.Body.Bytes()
+		want := []byte("raft: Initial configuration (index=1)")
+		if !bytes.Contains(got, want) {
+			r.Fatalf("got %q and did not find %q", got, want)
 		}
 	})
-
 }
 
 type closableRecorder struct {

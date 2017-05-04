@@ -23,7 +23,6 @@ func TestHealth_Node(t *testing.T) {
 	}
 	name := info["Config"]["NodeName"].(string)
 	retry.Run("", t, func(r *retry.R) {
-
 		checks, meta, err := health.Node(name, nil)
 		if err != nil {
 			r.Fatal(err)
@@ -35,7 +34,6 @@ func TestHealth_Node(t *testing.T) {
 			r.Fatalf("bad: %v", checks)
 		}
 	})
-
 }
 
 func TestHealthChecks_AggregatedStatus(t *testing.T) {
@@ -193,8 +191,8 @@ func TestHealth_Checks(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	defer agent.ServiceDeregister("foo")
-	retry.Run("", t, func(r *retry.R) {
 
+	retry.Run("", t, func(r *retry.R) {
 		checks := HealthChecks{
 			&HealthCheck{
 				Node:        "node123",
@@ -218,7 +216,6 @@ func TestHealth_Checks(t *testing.T) {
 			r.Fatal("health.Checks failed")
 		}
 	})
-
 }
 
 func TestHealth_Checks_NodeMetaFilter(t *testing.T) {
@@ -243,8 +240,8 @@ func TestHealth_Checks_NodeMetaFilter(t *testing.T) {
 		t.Fatalf("err: %v", err)
 	}
 	defer agent.ServiceDeregister("foo")
-	retry.Run("", t, func(r *retry.R) {
 
+	retry.Run("", t, func(r *retry.R) {
 		checks, meta, err := health.Checks("foo", &QueryOptions{NodeMeta: meta})
 		if err != nil {
 			r.Fatal(err)
@@ -256,7 +253,6 @@ func TestHealth_Checks_NodeMetaFilter(t *testing.T) {
 			r.Fatalf("Bad: %v", checks)
 		}
 	})
-
 }
 
 func TestHealth_Service(t *testing.T) {
@@ -265,7 +261,6 @@ func TestHealth_Service(t *testing.T) {
 
 	health := c.Health()
 	retry.Run("", t, func(r *retry.R) {
-
 		// consul service should always exist...
 		checks, meta, err := health.Service("consul", "", true, nil)
 		if err != nil {
@@ -284,7 +279,6 @@ func TestHealth_Service(t *testing.T) {
 			r.Fatalf("Bad datacenter: %v", checks[0].Node)
 		}
 	})
-
 }
 
 func TestHealth_Service_NodeMetaFilter(t *testing.T) {
@@ -296,7 +290,6 @@ func TestHealth_Service_NodeMetaFilter(t *testing.T) {
 
 	health := c.Health()
 	retry.Run("", t, func(r *retry.R) {
-
 		// consul service should always exist...
 		checks, meta, err := health.Service("consul", "", true, &QueryOptions{NodeMeta: meta})
 		if err != nil {
@@ -315,7 +308,6 @@ func TestHealth_Service_NodeMetaFilter(t *testing.T) {
 			r.Fatalf("Bad datacenter: %v", checks[0].Node)
 		}
 	})
-
 }
 
 func TestHealth_State(t *testing.T) {
@@ -325,7 +317,6 @@ func TestHealth_State(t *testing.T) {
 
 	health := c.Health()
 	retry.Run("", t, func(r *retry.R) {
-
 		checks, meta, err := health.State("any", nil)
 		if err != nil {
 			r.Fatal(err)
@@ -337,7 +328,6 @@ func TestHealth_State(t *testing.T) {
 			r.Fatalf("Bad: %v", checks)
 		}
 	})
-
 }
 
 func TestHealth_State_NodeMetaFilter(t *testing.T) {
@@ -350,7 +340,6 @@ func TestHealth_State_NodeMetaFilter(t *testing.T) {
 
 	health := c.Health()
 	retry.Run("", t, func(r *retry.R) {
-
 		checks, meta, err := health.State("any", &QueryOptions{NodeMeta: meta})
 		if err != nil {
 			r.Fatal(err)
@@ -362,5 +351,4 @@ func TestHealth_State_NodeMetaFilter(t *testing.T) {
 			r.Fatalf("Bad: %v", checks)
 		}
 	})
-
 }

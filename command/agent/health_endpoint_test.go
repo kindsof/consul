@@ -21,8 +21,8 @@ func TestHealthChecksInState(t *testing.T) {
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
-		retry.Run("", t, func(r *retry.R) {
 
+		retry.Run("", t, func(r *retry.R) {
 			resp := httptest.NewRecorder()
 			obj, err := srv.HealthChecksInState(resp, req)
 			if err != nil {
@@ -38,7 +38,6 @@ func TestHealthChecksInState(t *testing.T) {
 				r.Fatalf("bad: %v", obj)
 			}
 		})
-
 	})
 
 	httpTest(t, func(srv *HTTPServer) {
@@ -46,8 +45,8 @@ func TestHealthChecksInState(t *testing.T) {
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
-		retry.Run("", t, func(r *retry.R) {
 
+		retry.Run("", t, func(r *retry.R) {
 			resp := httptest.NewRecorder()
 			obj, err := srv.HealthChecksInState(resp, req)
 			if err != nil {
@@ -63,7 +62,6 @@ func TestHealthChecksInState(t *testing.T) {
 				r.Fatalf("bad: %v", obj)
 			}
 		})
-
 	})
 }
 
@@ -89,8 +87,8 @@ func TestHealthChecksInState_NodeMetaFilter(t *testing.T) {
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
-		retry.Run("", t, func(r *retry.R) {
 
+		retry.Run("", t, func(r *retry.R) {
 			resp := httptest.NewRecorder()
 			obj, err := srv.HealthChecksInState(resp, req)
 			if err != nil {
@@ -106,7 +104,6 @@ func TestHealthChecksInState_NodeMetaFilter(t *testing.T) {
 				r.Fatalf("bad: %v", obj)
 			}
 		})
-
 	})
 }
 
@@ -758,14 +755,13 @@ func TestHealthServiceNodes_WanTranslation(t *testing.T) {
 	testrpc.WaitForLeader(t, srv2.agent.RPC, "dc2")
 
 	// Wait for the WAN join.
-	addr := fmt.Sprintf("127.0.0.1:%d",
-		srv1.agent.config.Ports.SerfWan)
+	addr := fmt.Sprintf("127.0.0.1:%d", srv1.agent.config.Ports.SerfWan)
 	if _, err := srv2.agent.JoinWAN([]string{addr}); err != nil {
 		t.Fatalf("err: %v", err)
 	}
 	retry.Run("", t, func(r *retry.R) {
-		if len(srv1.agent.WANMembers()) <= 1 {
-			r.Fatal(nil)
+		if got, want := len(srv1.agent.WANMembers()), 2; got < want {
+			r.Fatalf("got %d WAN members want at least %d", got, want)
 		}
 	})
 

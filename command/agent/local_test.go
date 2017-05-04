@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"fmt"
 	"os"
 	"reflect"
 	"testing"
@@ -1032,43 +1031,40 @@ func TestAgentAntiEntropy_Checks_ACLDeny(t *testing.T) {
 	agent.state.RemoveCheck("api-check")
 	agent.StartSync()
 	time.Sleep(200 * time.Millisecond)
-	retry.
+	// Verify that we are in sync
+	retry.Run("", t, func(r *retry.R) {
+		req := structs.NodeSpecificRequest{
+			Datacenter: "dc1",
+			Node:       agent.config.NodeName,
+			QueryOptions: structs.QueryOptions{
+				Token: "root",
+			},
+		}
+		var checks structs.IndexedHealthChecks
+		if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
+			r.Fatalf("err: %v", err)
+		}
 
-		// Verify that we are in sync
-		Run("", t, func(r *retry.R) {
+		// We should have 1 check (just serf)
+		if len(checks.HealthChecks) != 1 {
+			r.Fatalf("bad: %v", checks)
+		}
 
-			req := structs.NodeSpecificRequest{
-				Datacenter: "dc1",
-				Node:       agent.config.NodeName,
-				QueryOptions: structs.QueryOptions{
-					Token: "root",
-				},
+		// All the checks should match
+		for _, chk := range checks.HealthChecks {
+			chk.CreateIndex, chk.ModifyIndex = 0, 0
+			switch chk.CheckID {
+			case "mysql-check":
+				r.Fatalf("should not be permitted")
+			case "api-check":
+				r.Fatalf("should be deleted")
+			case "serfHealth":
+				// ignore
+			default:
+				r.Fatalf("unexpected check: %v", chk)
 			}
-			var checks structs.IndexedHealthChecks
-			if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
-				r.Fatalf("err: %v", err)
-			}
-
-			// We should have 1 check (just serf)
-			if len(checks.HealthChecks) != 1 {
-				r.Fatalf("bad: %v", checks)
-			}
-
-			// All the checks should match
-			for _, chk := range checks.HealthChecks {
-				chk.CreateIndex, chk.ModifyIndex = 0, 0
-				switch chk.CheckID {
-				case "mysql-check":
-					t.Fatalf("should not be permitted")
-				case "api-check":
-					t.Fatalf("should be deleted")
-				case "serfHealth":
-					// ignore
-				default:
-					return false, fmt.Errorf("unexpected check: %v", chk)
-				}
-			}
-		})
+		}
+	})
 
 	// Check the local state.
 	if len(agent.state.checks) != 1 {
@@ -1118,14 +1114,11 @@ func TestAgentAntiEntropy_Check_DeferSync(t *testing.T) {
 	}
 	var checks structs.IndexedHealthChecks
 	retry.Run("", t, func(r *retry.R) {
-
 		if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
 			r.Fatalf("err: %v", err)
 		}
-
-		// Verify checks in place
-		if len(checks.HealthChecks) != 2 {
-			r.Fatalf("checks: %v", check)
+		if got, want := len(checks.HealthChecks), 2; got != want {
+			r.Fatalf("got %d health checks want %d", got, want)
 		}
 	})
 
@@ -1147,25 +1140,22 @@ func TestAgentAntiEntropy_Check_DeferSync(t *testing.T) {
 			}
 		}
 	}
-	retry.
+	// Wait for a deferred update
+	retry.Run("", t, func(r *retry.R) {
+		if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
+			r.Fatal(err)
+		}
 
-		// Wait for a deferred update
-		Run("", t, func(r *retry.R) {
-
-			if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
-				r.Fatal(err)
-			}
-
-			// Verify updated
-			for _, chk := range checks.HealthChecks {
-				switch chk.CheckID {
-				case "web":
-					if chk.Output != "output" {
-						return false, fmt.Errorf("no update: %v", chk)
-					}
+		// Verify updated
+		for _, chk := range checks.HealthChecks {
+			switch chk.CheckID {
+			case "web":
+				if chk.Output != "output" {
+					r.Fatalf("no update: %v", chk)
 				}
 			}
-		})
+		}
+	})
 
 	// Change the output in the catalog to force it out of sync.
 	eCopy := check.Clone()
@@ -1251,25 +1241,22 @@ func TestAgentAntiEntropy_Check_DeferSync(t *testing.T) {
 			}
 		}
 	}
-	retry.
+	// Wait for the deferred update.
+	retry.Run("", t, func(r *retry.R) {
+		if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
+			r.Fatal(err)
+		}
 
-		// Wait for the deferred update.
-		Run("", t, func(r *retry.R) {
-
-			if err := agent.RPC("Health.NodeChecks", &req, &checks); err != nil {
-				r.Fatal(err)
-			}
-
-			// Verify updated
-			for _, chk := range checks.HealthChecks {
-				switch chk.CheckID {
-				case "web":
-					if chk.Output != "deferred" {
-						return false, fmt.Errorf("no update: %v", chk)
-					}
+		// Verify updated
+		for _, chk := range checks.HealthChecks {
+			switch chk.CheckID {
+			case "web":
+				if chk.Output != "deferred" {
+					r.Fatalf("no update: %v", chk)
 				}
 			}
-		})
+		}
+	})
 
 }
 
@@ -1507,7 +1494,6 @@ func TestAgent_nestedPauseResume(t *testing.T) {
 		}
 	}()
 	l.Resume()
-
 }
 
 func TestAgent_sendCoordinate(t *testing.T) {
@@ -1529,7 +1515,6 @@ func TestAgent_sendCoordinate(t *testing.T) {
 	}
 	var reply structs.IndexedCoordinates
 	retry.Run("", t, func(r *retry.R) {
-
 		if err := agent.RPC("Coordinate.ListNodes", &req, &reply); err != nil {
 			r.Fatalf("err: %s", err)
 		}
@@ -1541,5 +1526,4 @@ func TestAgent_sendCoordinate(t *testing.T) {
 			r.Fatalf("bad: %v", coord)
 		}
 	})
-
 }

@@ -90,16 +90,15 @@ func TestOperator_AutopilotServerHealth(t *testing.T) {
 
 	operator := c.Operator()
 	retry.Run("", t, func(r *retry.R) {
-
 		out, err := operator.AutopilotServerHealth(nil)
 		if err != nil {
 			r.Fatalf("err: %v", err)
 		}
+
 		if len(out.Servers) != 1 ||
 			!out.Servers[0].Healthy ||
 			out.Servers[0].Name != s.Config.NodeName {
 			r.Fatalf("bad: %v", out)
 		}
 	})
-
 }

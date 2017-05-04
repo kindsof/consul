@@ -104,17 +104,13 @@ func TestRetryJoin(t *testing.T) {
 		close(doneCh)
 	}()
 	retry.Run("", t, func(r *retry.R) {
-
-		mem := agent.LANMembers()
-		if len(mem) != 2 {
-			r.Fatalf("bad: %#v", mem)
+		if got, want := len(agent.LANMembers()), 2; got != want {
+			r.Fatalf("got %d LAN members want %d", got, want)
 		}
-		mem = agent.WANMembers()
-		if len(mem) != 2 {
-			r.Fatalf("bad (wan): %#v", mem)
+		if got, want := len(agent.WANMembers()), 2; got != want {
+			r.Fatalf("got %d WAN members want %d", got, want)
 		}
 	})
-
 }
 
 func TestReadCliConfig(t *testing.T) {
