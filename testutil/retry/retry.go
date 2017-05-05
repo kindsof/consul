@@ -3,27 +3,13 @@
 // A sample retry operation looks like this:
 //
 //   func TestX(t *testing.T) {
-//       for r := retry.OneSec(); r.NextOr(t.FailNow); {
+//       retry.Run(t, func(r *retry.R) {
 //           if err := foo(); err != nil {
-//               t.Log("f: ", err)
-//               continue
+//               r.Fatal("f: ", err)
 //           }
-//           break
-//       }
+//       })
 //   }
 //
-// A sample retry operation which exits a test with a message
-// looks like this:
-//
-//   func TestX(t *testing.T) {
-//       for r := retry.OneSec(); r.NextOr(func(){ t.Fatal("foo failed") }); {
-//           if err := foo(); err != nil {
-//               t.Log("f: ", err)
-//               continue
-//           }
-//           break
-//       }
-//   }
 package retry
 
 import (
@@ -32,10 +18,19 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"testing"
 	"time"
 )
 
+// Failer is an interface compatible with testing.T.
+type Failer interface {
+	// Log is called for the final test output
+	Log(args ...interface{})
+
+	// FailNow is called when the retrying is abandoned.
+	FailNow()
+}
+
+// R provides context for the retryer.
 type R struct {
 	fail   bool
 	output []string
@@ -79,11 +74,13 @@ func decorate(s string) string {
 	return fmt.Sprintf("%s:%d: %s", file, line, s)
 }
 
-func Run(t *testing.T, f func(r *R)) {
+// Run retries f for one second.
+func Run(t Failer, f func(r *R)) {
 	run(OneSec(), t, f)
 }
 
-func RunWith(r Retryer, t *testing.T, f func(r *R)) {
+// RunWith retries f until the exit condition of r is met.
+func RunWith(r Retryer, t Failer, f func(r *R)) {
 	run(r, t, f)
 }
 
@@ -106,7 +103,7 @@ func dedup(a []string) string {
 	return string(b.Bytes())
 }
 
-func run(r Retryer, t *testing.T, f func(r *R)) {
+func run(r Retryer, t Failer, f func(r *R)) {
 	rr := &R{}
 	fail := func() {
 		out := dedup(rr.output)
